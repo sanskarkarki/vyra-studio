@@ -1,0 +1,1008 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   Scroll architecture
+
+   .scroll-track is a plain block whose height is simply hero (100vh) plus the
+   three chapter drivers. Inside it, .stage is `position: sticky; top: 0`, so
+   it stays glued to the top of the viewport for the entire track — long
+   enough for all of section two, which is three overlays pinned inside the
+   stage rather than blocks that scroll past it.
+
+   This is the whole pin. No ScrollTrigger `pin: true`, no pin-spacer element
+   injected into the layout, no jump at the moment the pin engages, and no
+   re-measure required when a driver's height changes at a breakpoint.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.scroll-track {
+  position: relative;
+  z-index: 1;
+}
+
+.stage {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100svh;
+  overflow: hidden;
+  z-index: 0;
+}
+
+/* Driven by ScrollTrigger as the statement takes over. */
+.stage__mask {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+  background: #050505;
+  opacity: 0;
+}
+
+/* ═══ Top nav pill ═════════════════════════════════════════════════════ */
+
+/* The pill is a column: a fixed 64px row, with the dropdown growing below it
+   inside the same rounded, clipped box. `height` is deliberately absent — the
+   row's `flex: 0 0 64px` sets the closed height and the box grows when the
+   menu opens, instead of the menu spilling out of a locked 64px frame. */
+.topnav {
+  position: fixed;
+  top: 30px;
+  left: 50%;
+  translate: -50% 0;
+  z-index: 200;
+  width: min(500px, calc(100vw - 2.4rem));
+  display: flex;
+  flex-direction: column;
+  border-radius: 6px;
+  background: #141414;
+  color: var(--ink);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform, opacity;
+  /* Centring lives on `translate`, the entrance on `transform`. Two
+     properties, two owners — the keyframes below can scale freely without
+     ever having to restate the -50%. */
+}
+
+.topnav__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 0 0 64px;
+  min-height: 64px;
+  width: 100%;
+  padding: 0 24px;
+}
+
+.topnav__mail,
+.topnav__burger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity 0.18s,
+    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* 25px at stroke-width 2 with round caps. At 20/1.4 with butt caps the marks
+   read as hairlines and the pill looks unfinished at any size. */
+.topnav__row svg {
+  width: 25px;
+  height: 25px;
+  overflow: visible;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.topnav__mark {
+  text-align: center;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  font-size: 0.95rem;
+  opacity: 0;
+  transition: opacity 0.18s;
+}
+
+/* Both bars rotate about ONE point that sits between them and left of centre.
+   A shared origin is what turns two parallel lines into a crossing X; give
+   each bar its own centre and they rotate in place and stay parallel. */
+.topnav__bar {
+  transform-origin: 9px 12px;
+  transform-box: view-box;
+  transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.topnav.is-menu-open .topnav__bar {
+  transition: transform 0.45s cubic-bezier(0.76, 0, 0.24, 1);
+}
+
+.topnav.is-menu-open .topnav__bar--1 {
+  transform: rotate(45deg);
+}
+
+.topnav.is-menu-open .topnav__bar--2 {
+  transform: rotate(-45deg);
+}
+
+/* Two stages, not one drop. The bar stretches out as a hairline pill first,
+   then inflates to full height and squares its corners. The contents only
+   fade in once there is a box to sit in — hence the 0.42s hold, which is
+   just past the 55% keyframe where the stretch finishes. */
+@keyframes topnavIn {
+  0% {
+    transform: scaleX(0) scaleY(0.04);
+    opacity: 1;
+    border-radius: 100px;
+  }
+  55% {
+    transform: scaleX(1) scaleY(0.04);
+    opacity: 1;
+    border-radius: 100px;
+  }
+  100% {
+    transform: scaleX(1) scaleY(1);
+    opacity: 1;
+    border-radius: 6px;
+  }
+}
+
+@keyframes topnavOut {
+  0% {
+    transform: scaleX(1) scaleY(1);
+    opacity: 1;
+    border-radius: 6px;
+  }
+  45% {
+    transform: scaleX(1) scaleY(0.04);
+    opacity: 1;
+    border-radius: 100px;
+  }
+  100% {
+    transform: scaleX(0) scaleY(0.04);
+    opacity: 0;
+    border-radius: 100px;
+  }
+}
+
+.topnav--in {
+  animation: topnavIn 0.65s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  pointer-events: auto;
+}
+
+.topnav--out {
+  animation: topnavOut 0.5s cubic-bezier(0.4, 0, 0.6, 1) forwards;
+  pointer-events: none;
+}
+
+.topnav--in .topnav__mail,
+.topnav--in .topnav__burger,
+.topnav--in .topnav__mark {
+  opacity: 1;
+  transition-delay: 0.42s;
+}
+
+/* Hover has to clear the entrance delay or the first hover after the pill
+   arrives sits inert for four-tenths of a second. */
+.topnav--in .topnav__mail:hover,
+.topnav--in .topnav__burger:hover {
+  opacity: 0.7;
+  transition-delay: 0s;
+}
+
+.topnav--out .topnav__mail,
+.topnav--out .topnav__burger,
+.topnav--out .topnav__mark {
+  opacity: 0;
+  transition-delay: 0s;
+}
+
+.topnav__menu {
+  height: 0;
+  opacity: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0 1.4rem;
+}
+
+.topnav__menu a {
+  color: var(--ink-dim);
+  text-decoration: none;
+  font-size: 0.82rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 0.4rem 0;
+}
+
+.topnav__menu a:hover {
+  color: var(--ink);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Section two — three chapters in one pinned stage
+
+   Each chapter is an absolutely-positioned overlay INSIDE .stage, so it
+   inherits the sticky pin for free and sits on top of the hero. The drivers
+   below supply the scroll distance and paint nothing.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Each chapter gets its own driver element with a real height, rather than
+   slicing one long section into percentages. Change one chapter's length and
+   nothing else needs retuning.
+
+   No z-index here, deliberately. `position: relative` already paints this
+   above .stage because it comes later in the DOM, and adding a z-index would
+   make it a stacking context — which isolates mix-blend-mode and silently
+   kills the difference blending on .stm below. */
+.chapters {
+  position: relative;
+  pointer-events: none;
+}
+
+.chapter-scroll {
+  position: relative;
+  pointer-events: none;
+}
+
+/* These three add up to 920vh, and each edge lands on one of the phase
+   breakpoints in Chapters.ts — 405/920 = 0.440, 718/920 = 0.780. That is not
+   decoration: the wave panel scrubs its rows against its own driver, so the
+   rows must stop travelling at the same instant the master clock says the
+   panel is gone. Change one height and the other two have to absorb it, or
+   the breakpoints drift off the driver edges and the row scrub runs on past
+   a panel that is no longer there.
+
+   405vh also gives twelve rows room to pass the centreline at a readable
+   pace; shorten it and rows flick past faster than the 150ms flip resolves. */
+.chapter-scroll--wave {
+  height: 405vh;
+}
+
+.chapter-scroll--marquee {
+  height: 313vh;
+}
+
+.chapter-scroll--cube {
+  height: 202vh;
+}
+
+/* All three chapters share the pinned stage and cross-fade between each
+   other; only one is opaque at a time. */
+.chapter {
+  position: absolute;
+  inset: 0;
+  z-index: 24;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.wave-panel {
+  position: absolute;
+  inset: 0;
+  /* Above .stage__mask (20), not below it. The mask is what blacks the hero
+     out; the panel has to sit on top of that blackout, otherwise it is
+     painted over the instant the mask reaches full opacity — which looks
+     exactly like the panel never rendering. */
+  z-index: 24;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  overflow: visible;
+  /* Its own stacking context, so the z-indexes inside cannot leak out and
+     fight the hero UI. */
+  isolation: isolate;
+  will-change: opacity, transform;
+}
+
+.wave__wrapper {
+  display: flex;
+  width: 90%;
+  gap: 25vw;
+  position: relative;
+  will-change: transform;
+}
+
+.wave__col {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.7rem, 1.7vh, 1.25rem);
+  font-size: clamp(1.3rem, 2.5vw, 2.35rem);
+  font-weight: 400;
+  line-height: 1;
+  z-index: 2;
+}
+
+/* Left column grows rightward, right column leftward. With the arch signed
+   per column, the two sides swell toward and away from each other instead of
+   drifting in the same direction. */
+.wave__col--left {
+  align-items: flex-start;
+}
+
+.wave__col--right {
+  align-items: flex-end;
+}
+
+.wave__row {
+  width: max-content;
+  color: rgba(244, 240, 232, 0.25);
+  text-transform: uppercase;
+  transition: color 300ms ease-out;
+  /* The scrubbed wave owns this element's transform. */
+  will-change: transform;
+  pointer-events: auto;
+  user-select: none;
+  cursor: default;
+}
+
+.wave__row.is-focused {
+  color: var(--ink);
+}
+
+/* The entrance timeline owns this element's transform. One owner each. */
+.wave__inner {
+  will-change: transform, opacity;
+}
+
+.wave__flip {
+  display: block;
+  position: relative;
+  /* Clips vertically only. The -9999px horizontal inset lets the alternate
+     label be wider than the one it replaces without being cut off, while the
+     -0.25em vertical bleed stops descenders being shaved mid-slide. This one
+     line is the whole trick — a plain `overflow: hidden` would crop the
+     longer label and force both strings to the same width. */
+  clip-path: inset(-0.25em -9999px);
+}
+
+.wave__en,
+.wave__alt {
+  display: block;
+  transition: transform 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+}
+
+.wave__alt {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: translateY(130%);
+  white-space: nowrap;
+  color: inherit;
+  text-transform: none;
+}
+
+/* The replacement label is longer than the word it replaces, and it grows
+   away from whichever edge it is anchored to. Anchored left in a column that
+   is itself right-aligned, it runs off the side of the stage — measured at 17
+   to 24px of the closing bracket lost, depending on the row. The right column
+   is a mirror of the left, so its label has to grow leftward too. */
+.wave__col--right .wave__alt {
+  left: auto;
+  right: 0;
+}
+
+/* Hover flips a row too, independent of scroll — the columns stay alive
+   under the cursor even when the page is still. */
+.wave__row.is-focused .wave__en,
+.wave__row:hover .wave__en {
+  transform: translateY(-130%);
+}
+
+.wave__row.is-focused .wave__alt,
+.wave__row:hover .wave__alt {
+  transform: translateY(0);
+}
+
+/* ── Centre plate ─────────────────────────────────────────────────────── */
+
+/* The plate is centred on the hairline, and the caption hangs off it
+   absolutely rather than sitting in flow. If the caption is a flex sibling it
+   adds its own height to the block, the block gets centred, and the hairline
+   ends up ~20px above true centre — just enough to stop the focused row from
+   sitting exactly on the line. */
+.wave__plate {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  translate: -50% -50%;
+  width: 100vw;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.wave__plate-row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+/* The hairline that runs out to both edges through the centreline. Scaled
+   from the plate outward on entry. */
+.wave__line {
+  flex: 1 1 0;
+  height: 1px;
+  background: rgba(244, 240, 232, 0.18);
+}
+
+.wave__line--l {
+  transform-origin: right center;
+}
+
+.wave__line--r {
+  transform-origin: left center;
+}
+
+/* The plate is now a container holding two stacked images. Sizing lives here
+   so both children inherit exactly the same box and the crossfade has no
+   reflow between them. */
+.wave__thumb {
+  position: relative;
+  width: 15vw;
+  height: 30vh;
+  flex-shrink: 0;
+}
+
+.wave__thumb-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* The second plate starts hidden; swapPlate() alternates which one is on top
+   and only clears the outgoing one after the incoming one is solid. */
+.wave__thumb-img:nth-child(2) {
+  opacity: 0;
+}
+
+.wave__caption {
+  position: absolute;
+  top: calc(100% + 1.3rem);
+  left: 50%;
+  translate: -50% 0;
+  white-space: nowrap;
+  margin: 0;
+  font-size: 0.78rem;
+  letter-spacing: 0.16em;
+  color: var(--ink-dim);
+}
+
+/* ── Chapter marks ────────────────────────────────────────────────────── */
+
+.wave__chapter {
+  position: absolute;
+  top: 13%;
+  left: 4vw;
+  margin: 0;
+  font-family: 'SFMono-Regular', ui-monospace, 'Menlo', monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  color: var(--ink-dim);
+  z-index: 4;
+}
+
+.wave__header {
+  position: absolute;
+  top: 30%;
+  left: 50%;
+  translate: -50% 0;
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  color: var(--ink-dim);
+  white-space: nowrap;
+  z-index: 4;
+}
+
+/* ═══ Marquee ══════════════════════════════════════════════════════════ */
+
+.marquee {
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
+}
+
+.marquee__track {
+  display: flex;
+  width: max-content;
+  white-space: nowrap;
+  font-size: clamp(3rem, 9vw, 9rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: rgba(244, 240, 232, 0.14);
+  will-change: transform;
+}
+
+/* ═══ Section three: ring gallery ══════════════════════════════════════ */
+
+.ring {
+  position: relative;
+  z-index: 20;
+  /* The sticky child pins for (height - 100vh) of scroll. 300vh gives the
+     assembly 200vh to grow in, turn and leave — enough to read, short enough
+     not to feel like a hostage situation. */
+  height: 300vh;
+  background: #050505;
+}
+
+.ring__sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100svh;
+  overflow: hidden;
+}
+
+.ring__canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+}
+
+.ring__canvas canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.ring__marquee {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  translate: 0 -50%;
+  z-index: 1;
+}
+
+.ring__center {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  pointer-events: none;
+}
+
+.ring__title {
+  margin: 0;
+  font-size: clamp(2.6rem, 7vw, 6.4rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.ring__sub {
+  margin: 0.9rem 0 0;
+  font-size: 0.86rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  line-height: 1.9;
+}
+
+.ring__stats {
+  position: absolute;
+  bottom: 12vh;
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 0 clamp(1.2rem, 4vw, 4rem);
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  font-family: 'SFMono-Regular', ui-monospace, 'Menlo', monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.16em;
+  color: var(--ink-dim);
+  border-bottom: 1px solid rgba(244, 240, 232, 0.16);
+  padding-bottom: 0.9rem;
+}
+
+/* Softens the point where cards cross the viewport edge. */
+.ring__fade {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 14vw;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.ring__fade--l {
+  left: 0;
+  background: linear-gradient(to right, #050505, transparent);
+}
+
+.ring__fade--r {
+  right: 0;
+  background: linear-gradient(to left, #050505, transparent);
+}
+
+@media (max-width: 767px) {
+  .wave__wrapper {
+    width: 94%;
+    gap: 6vw;
+  }
+
+  .wave__header {
+    white-space: normal;
+    width: 80vw;
+    text-align: center;
+  }
+
+  .ring {
+    height: 220vh;
+  }
+
+  .ring__stats {
+    flex-direction: column;
+    gap: 0.4rem;
+    align-items: flex-start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wave-panel {
+    opacity: 1;
+  }
+
+  .wave__en,
+  .wave__alt,
+  .wave__row {
+    transition: none;
+  }
+}
+
+/* ═══ Closing footer ═══════════════════════════════════════════════════
+   Not decoration: the ring gallery's exit animations are anchored to its
+   own `bottom`, and without something after it that edge never rises past
+   the viewport top. */
+
+.site-foot {
+  position: relative;
+  z-index: 30;
+  min-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  background: #050505;
+  color: var(--ink-dim);
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  text-align: center;
+}
+
+.site-foot__mark {
+  margin: 0 0 1.2rem;
+  font-size: clamp(2rem, 6vw, 4.2rem);
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: var(--ink);
+}
+
+.site-foot__line {
+  margin: 0;
+}
+
+.site-foot a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.site-foot a:hover {
+  color: var(--ink);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Chapter B — the dot-matrix title marquee
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.tm {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding-top: 50px;
+}
+
+.tm__sub {
+  margin: 0 0 15px;
+  font-size: 0.95rem;
+  letter-spacing: 0.1em;
+  color: #ddd;
+}
+
+.tm__desc {
+  margin: 18px 0 0;
+  font-size: 0.8rem;
+  letter-spacing: 0.14em;
+  color: var(--ink-dim);
+}
+
+/* The clipping box each line slides up out of. `block`, not `inline-block`:
+   an inline box sizes to the line's content box and clips descenders, so a
+   lowercase g would lose its tail at rest rather than only while travelling.
+   Built by TitleMarquee.ts, not by hand in the markup. */
+.tm__mask {
+  display: block;
+  overflow: hidden;
+}
+
+/* The cube passes in front of the giant words rather than behind them. Set
+   from the stage clock the moment the tumble starts, so the ordering is a
+   phase of the choreography instead of a fact fixed in the stylesheet.
+
+   22 has a floor and a ceiling and both are load-bearing: it must stay ABOVE
+   `.stage__mask` at 20, which by this point is an opaque black plane at full
+   coverage and will simply eat the marquee, and BELOW `.cube` at 24, which is
+   the entire point of the flip. Anything outside 21–23 breaks one end or the
+   other. */
+.tm--behind {
+  z-index: 22;
+}
+
+/* The blend mode goes on the WRAPPER, not the items, so a word and its label
+   invert together as one object rather than each cutting its own hole. */
+.tm__wrap {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  mix-blend-mode: difference;
+}
+
+.tm__outer {
+  overflow: hidden;
+  width: 100%;
+}
+
+.tm__inner {
+  display: flex;
+  align-items: center;
+  width: max-content;
+  will-change: transform;
+}
+
+.tm__set {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* baseline, not center. The 10vw word and the 13px label share a baseline so
+   the label hangs off the word like a footnote. Switch this to `center` and
+   it immediately reads like a slide deck. */
+.tm__block {
+  display: inline-flex;
+  align-items: baseline;
+  flex-shrink: 0;
+  gap: 0.6rem;
+  padding-right: 3vw;
+}
+
+.tm__word {
+  font-family: 'Bitcount Grid Single', ui-monospace, monospace;
+  font-stretch: semi-expanded;
+  font-size: 10vw;
+  font-weight: 400;
+  line-height: 1;
+  color: #fff;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.tm__label {
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  color: #fff;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Chapter C — the cube (CSS 3D, six faces)
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* No centring here any more. The panel is full-bleed and its centre is not
+   quite the viewport centre; centring the wrapper against the viewport
+   instead is what fixes the placement. */
+.cube {
+  display: block;
+}
+
+.cube__wrapper {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  z-index: 20;
+  will-change: transform;
+}
+
+/* --scene-depth MUST be half of --scene-size or the faces do not meet at the
+   edges. Deriving it keeps that true while the size is animated.
+
+   `--scene-size` is written from Cube.ts every frame; the value here is only
+   the pre-first-paint fallback, and it has to match `baseSceneSize()` or the
+   cube jumps size on the first scroll event.
+
+   Perspective is the distance from viewer to projection plane in multiples of
+   the cube's own width. 5x is a long lens: the faces barely splay and the box
+   reads as solid rather than as a fanned-open net. A shorter 2.4x was in here
+   to make a Z-dolly legible, but the dolly is gone — depth now comes from the
+   tumble, and against a tumble the short lens just distorts. Because
+   perspective is derived from --scene-size, it grows with the zoom in phase C
+   and the projection stays proportionally identical the whole way in. */
+.cube__scene {
+  --scene-size: 230px;
+  --scene-depth: calc(var(--scene-size) / 2);
+  width: var(--scene-size);
+  height: var(--scene-size);
+  perspective: calc(var(--scene-size) * 5);
+  perspective-origin: 50% 50%;
+}
+
+@media (max-width: 767px) {
+  .cube__scene {
+    --scene-size: min(56vw, 220px);
+  }
+
+  /* Above centre on a tall screen, so the cube is not sitting behind the
+     browser chrome and the marquee at the same time. */
+  .cube__wrapper {
+    top: 40%;
+  }
+}
+
+.cube__body {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  /* Resting pose. At 0/0 a cube reads as a flat square and the effect is lost
+     in the first frame; -15/-45 shows three faces, none of them square-on. */
+  transform: rotateX(-15deg) rotateY(-45deg);
+  will-change: transform;
+}
+
+.cube__face {
+  position: absolute;
+  width: var(--scene-size);
+  height: var(--scene-size);
+  background-color: #080808;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 0 40px #000;
+  overflow: hidden;
+  user-select: none;
+  backface-visibility: hidden;
+}
+
+.cube__media {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.cube__face--front  { transform: rotateY(0deg)    translateZ(var(--scene-depth)); }
+.cube__face--back   { transform: rotateY(180deg)  translateZ(var(--scene-depth)); }
+.cube__face--right  { transform: rotateY(90deg)   translateZ(var(--scene-depth)); }
+.cube__face--left   { transform: rotateY(-90deg)  translateZ(var(--scene-depth)); }
+.cube__face--top    { transform: rotateX(90deg)   translateZ(var(--scene-depth)); }
+.cube__face--bottom { transform: rotateX(-90deg)  translateZ(var(--scene-depth)); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   The statement layer — scrolls OVER the pinned chapters
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Flex column + space-between rather than a fixed margin between groups.
+   The blocks then spread themselves evenly over however tall .chapters ends
+   up being — add a chapter or change one driver's height and the spacing
+   still fills the section instead of bunching everything into the first
+   screenful. */
+.stm {
+  position: absolute;
+  inset: 0;
+  /* Also no z-index, for the same reason as .chapters. A stacking context
+     here would confine the children's blending to this layer, where there is
+     nothing behind them, and the type would just render flat white over the
+     cube instead of inverting against it. */
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 26vh 1.5rem;
+}
+
+.stm__group {
+  display: flex;
+  flex-direction: column;
+  /* max-content so `margin-left: auto` on pos-4 actually pushes the block
+     right; a stretched full-width item has nothing to push against. */
+  width: max-content;
+  flex-shrink: 0;
+}
+
+/* The per-line clip the entrance rises out of. Applied to a wrapper rather
+   than the line itself, because the line is the element being transformed
+   and an element cannot clip its own transform. */
+.stm__mask {
+  display: block;
+  overflow: hidden;
+}
+
+/* mix-blend-mode: difference is the whole reason these read as part of the
+   imagery instead of as labels on top of it. White text inverts whatever is
+   behind it — white over the black chapters, dark the instant a bright plate
+   or cube face passes underneath. */
+.stm__el {
+  margin: 0;
+  white-space: nowrap;
+  filter: blur(0);
+  text-transform: uppercase;
+  opacity: 0.6;
+  font-family: 'DM Sans', 'Segoe UI', sans-serif;
+  font-size: 13px;
+  line-height: 1.35;
+  letter-spacing: 0.04em;
+  color: #fff;
+  mix-blend-mode: difference;
+  will-change: transform, opacity, filter;
+}
+
+/* Same element, same blend mode — just enormous and in the dot font. */
+.stm__el--xl {
+  font-size: clamp(2rem, 20vw, 15rem);
+  opacity: 1;
+  /* Bitcount Grid Single IS the dot-matrix effect — its glyphs are drawn as
+     dots. If this font fails to load you get a plain monospace letter and the
+     whole look is gone, so check the network tab first if the letters look
+     solid. Loaded from Google Fonts in index.html. */
+  font-family: 'Bitcount Grid Single', ui-monospace, monospace;
+  font-weight: 400;
+  line-height: 0.9;
+  letter-spacing: 0;
+}
+
+/* Four x-stations. Scattering blocks across a handful of fixed positions is
+   what stops a long scroll of small type from reading as a document. */
+.stm__pos-1 { margin-left: 4vw; }
+.stm__pos-2 { margin-left: 25vw; }
+.stm__pos-3 { margin-left: 70vw; }
+.stm__pos-4 { margin-left: auto; margin-right: 4vw; align-items: flex-end; }
+
+@media (max-width: 767px) {
+  .stm__pos-2 { margin-left: 12vw; }
+  .stm__pos-3 { margin-left: 30vw; }
+
+  .tm__word { font-size: 16vw; }
+
+  .chapter-scroll--wave { height: 320vh; }
+  .chapter-scroll--marquee { height: 160vh; }
+  .chapter-scroll--cube { height: 220vh; }
+}

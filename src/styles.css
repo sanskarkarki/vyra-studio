@@ -1,0 +1,336 @@
+:root {
+  --ink: #f4f0e8;
+  --ink-dim: rgba(244, 240, 232, 0.62);
+  --paper: #08090d;
+  --hair: rgba(244, 240, 232, 0.28);
+  --accent: #c8ff3d;
+  --accent-dim: rgba(200, 255, 61, 0.72);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* The slider canvas sits behind everything; the first slide's poster shows
+   through while the shader is still gated transparent.
+
+   Absolute, not fixed. It belongs to .stage, and .stage is the element that
+   sticks. A fixed canvas would keep painting underneath section three long
+   after the hero is meant to be gone. */
+#webgl-container {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: url('/slides/slide1.jpg') center / cover no-repeat #08090d;
+}
+
+#webgl-container canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Legibility scrim. The slideshow now runs from near-black ceramics to a
+   bright white interior, while the whole UI is one light ink colour. A soft
+   darkening at top and bottom holds contrast steady whichever slide is up,
+   so no future image swap can break the type. */
+.scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    rgba(6, 6, 6, 0.6) 0%,
+    rgba(6, 6, 6, 0.08) 30%,
+    rgba(6, 6, 6, 0.12) 62%,
+    rgba(6, 6, 6, 0.7) 100%
+  );
+}
+
+#grain {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+  opacity: 0.06;
+}
+
+.hero {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  padding: 0 clamp(1.2rem, 2.4vw, 2.4rem);
+  pointer-events: none;
+}
+
+.hero a,
+.hero button {
+  pointer-events: auto;
+}
+
+/* ── Headline ─────────────────────────────────────────────────────────── */
+
+.hero__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.6rem;
+}
+
+.hero__word {
+  margin: 0;
+  font-size: clamp(3.6rem, 10.8vw, 10.8rem);
+  line-height: 0.82;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+
+.hero__head-tag {
+  margin-top: clamp(1rem, 4vw, 4.2rem);
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ── Service columns ──────────────────────────────────────────────────── */
+
+.hero__cols {
+  display: flex;
+  justify-content: space-between;
+  margin-top: clamp(1.4rem, 4.4vh, 3.6rem);
+}
+
+.hero__services {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.8rem;
+  line-height: 1.9;
+}
+
+.hero__services--right {
+  text-align: right;
+}
+
+.hero__services--right li {
+  border-bottom: 1px solid var(--hair);
+  padding: 0.15rem 0 0.3rem 3rem;
+}
+
+/* ── Nav + captions ───────────────────────────────────────────────────── */
+
+.hero__nav {
+  position: absolute;
+  top: clamp(10rem, 24vh, 16rem);
+  left: 50%;
+  transform: translateX(-50%);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: clamp(2.4rem, 7vw, 7.5rem);
+
+  width: max-content;
+  z-index: 20;
+}
+
+.hero__nav a {
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.hero__nav a:hover,
+.hero__nav a:focus-visible {
+  color: var(--ink-dim);
+}
+
+.hero__captions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: clamp(0.8rem, 2.6vh, 2rem);
+  font-size: 0.74rem;
+  color: var(--ink-dim);
+}
+
+/* ── Centre stage: mark, counter, title, arrows ───────────────────────── */
+
+.hero__stage {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(2rem, 22vw, 22rem);
+}
+
+.hero__meta {
+  text-align: center;
+}
+
+.hero__mark {
+  color: var(--accent);
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+.hero__counter {
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.2em;
+}
+
+.hero__title {
+  margin-top: 0.35rem;
+  font-size: 0.94rem;
+  color: var(--ink-dim);
+}
+
+.hero__arrow {
+  background: none;
+  border: none;
+  color: var(--ink);
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0.4rem 0.8rem;
+}
+
+.hero__arrow:hover,
+.hero__arrow:focus-visible {
+  color: var(--ink-dim);
+}
+
+/* ── Waveform + thumbnails ────────────────────────────────────────────── */
+
+/* The rail and the thumbnails share one width, so bar 5.5 of segment 0 sits
+   dead centre under thumbnail 0. If these two widths ever drift apart the
+   crest stops lining up with the thumbnail you are hovering, which is the
+   single most noticeable way to get this wrong. */
+.hero__rail {
+  --rail-width: min(720px, 78vw);
+  width: var(--rail-width);
+  margin: 0 auto;
+}
+
+.hero__wave {
+  display: flex;
+  align-items: flex-end;
+  /* space-between, not gap: the pitch is derived from the rail width, so the
+     bar count can change without retuning a gap value. */
+  justify-content: space-between;
+  width: 100%;
+  height: var(--wave-height, 50px);
+}
+
+.wave__bar {
+  width: 2px;
+  flex: 0 0 2px;
+  /* Height and colour are written by Waveform.ts; the transition is what
+     turns those writes into the wave. Transitioning height against a
+     flex-end baseline keeps the 2px edges crisp, which a scaleY transform
+     cannot do. */
+  height: 15px;
+  background: rgba(244, 240, 232, 0.3);
+  transition:
+    height 0.6s cubic-bezier(0.25, 0.1, 0.25, 1),
+    background-color 0.6s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+.hero__thumbs {
+  display: flex;
+  width: 100%;
+  gap: 0;
+  margin-top: 0.75rem;
+}
+
+.hero__thumb {
+  flex: 1 1 0;
+  aspect-ratio: 12 / 5;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  opacity: 0.5;
+  transition: opacity 300ms ease;
+}
+
+.hero__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.hero__thumb.is-active,
+.hero__thumb:hover,
+.hero__thumb:focus-visible {
+  opacity: 1;
+}
+
+/* ── Footer ───────────────────────────────────────────────────────────── */
+
+.hero__foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 1.1rem 0 1.2rem;
+  font-size: 0.76rem;
+  line-height: 1.55;
+  color: var(--ink-dim);
+}
+
+.hero__foot p {
+  margin: 0;
+}
+
+.hero__foot-mid {
+  text-align: center;
+}
+
+.hero__foot-right {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  text-align: right;
+}
+
+.hero__foot-right a {
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.hero__foot-right a:hover,
+.hero__foot-right a:focus-visible {
+  color: var(--ink-dim);
+}
+
+@media (max-width: 767px) {
+  .hero__cols,
+  .hero__captions,
+  .hero__foot-left,
+  .hero__foot-right {
+    display: none;
+  }
+  .hero__nav {
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+}
