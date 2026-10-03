@@ -65,10 +65,10 @@ const WAVE_RIGHT: WaveRow[] = [
 
 /** Chapter B. Big word + the small label that shares its baseline. */
 const MARQUEE_WORDS = [
+  { word: 'FURNITURE', label: 'Collection' },
   { word: 'INTERIORS', label: 'Room Tone' },
-  { word: 'TABLEWARE', label: 'Objects' },
-  { word: 'TEXTILES', label: 'Material' },
-  { word: 'JEWELRY', label: 'Heirloom' },
+  { word: 'MATERIALS', label: 'Natural Matter' },
+  { word: 'CRAFT', label: 'Heirloom' },
 ];
 
 /** Chapter C. Six faces, in order: front, back, right, left, top, bottom. */
