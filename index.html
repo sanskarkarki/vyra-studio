@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Vyra. A visual and digital studio shaping bold identities, immersive interfaces, and memorable experiences."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Bitcount Grid Single IS the dot-matrix effect. The giant letters are
+         plain text in this face, not a canvas or a grid of divs. -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bitcount+Grid+Single:wght@100..900&family=DM+Sans:opsz,wght@9..40,100..1000&display=swap"
+      rel="stylesheet"
+    />
+    <title>Vyra Studio</title>
+  </head>
+  <body>
+    <!-- Drops in from the top centre once the statement engages. -->
+    <nav class="topnav" aria-label="Primary">
+      <!-- Flex row with a 24px inset, not a 64px grid track. The grid put the
+           icons' cells at the extreme edges; the reference centres a 32px
+           button 40px in from each side, which is what makes the pill read as
+           a control bar rather than three things pushed apart. -->
+      <div class="topnav__row">
+        <a class="topnav__mail" href="mailto:hello@vyra.studio" aria-label="Email the studio">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+            <polyline points="22,6 12,13 2,6" />
+          </svg>
+        </a>
+        <span class="topnav__mark">VYRA&deg;</span>
+        <!-- One SVG with two lines, not two spans. The spans could never
+             become an X: rotating them about a shared origin needs both bars
+             in one coordinate space, which is what the 24-unit viewBox gives. -->
+        <button class="topnav__burger" type="button" aria-expanded="false" aria-label="Open menu">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <line class="topnav__bar topnav__bar--1" x1="5" y1="9" x2="19" y2="9" />
+            <line class="topnav__bar topnav__bar--2" x1="5" y1="15" x2="19" y2="15" />
+          </svg>
+        </button>
+      </div>
+      <div class="topnav__menu">
+        <a href="#work">Work</a>
+        <a href="#about">About</a>
+        <a href="#labs">Labs</a>
+        <a href="#contact">Contact</a>
+      </div>
+    </nav>
+
+    <!-- ══ Track: the hero sticks for the whole height of this element ══ -->
+    <div class="scroll-track">
+      <div class="stage">
+        <div id="webgl-container" aria-hidden="true"></div>
+        <div class="scrim" aria-hidden="true"></div>
+        <div class="stage__mask" aria-hidden="true"></div>
+
+        <main class="hero">
+          <header class="hero__head">
+            <h1 class="hero__word hero__word--left">VYRA</h1>
+            <p class="hero__head-tag">( Furniture &amp; Interiors )</p>
+            <h1 class="hero__word hero__word--right">LIVING</h1>
+          </header>
+
+          <div class="hero__cols">
+            <ul class="hero__services hero__services--left">
+              <li>Furniture shaped for modern living</li>
+              <li>Natural materials, considered forms</li>
+              <li>Crafted with precision and intention</li>
+              <li>Objects designed to endure</li>
+            </ul>
+            <ul class="hero__services hero__services--right">
+              <li>Furniture Collections</li>
+              <li>Interior Objects</li>
+              <li>Material &amp; Form</li>
+              <li>Custom Living Spaces</li>
+            </ul>
+          </div>
+
+          <nav class="hero__nav" aria-label="Sections">
+            <a href="#about">About</a>
+            <a href="#work">Collection</a>
+            <a href="#labs">Materials</a>
+            <a href="#blog">Journal</a>
+            <a href="#contact">Contact</a>
+          </nav>
+
+          <div class="hero__captions" aria-hidden="true">
+            <span>( Silhouette )</span>
+            <span>( Material )</span>
+            <span>( Craftsmanship )</span>
+            <span>( Interiors )</span>
+          </div>
+
+          <div class="hero__stage">
+            <button class="hero__arrow hero__arrow--prev" type="button" aria-label="Previous slide">
+              &#171;
+            </button>
+            <div class="hero__meta">
+              <div class="hero__mark">VYRA&deg;</div>
+              <div class="hero__counter">01 // 05</div>
+              <div class="hero__title">Nocturne House</div>
+            </div>
+            <button class="hero__arrow hero__arrow--next" type="button" aria-label="Next slide">
+              &#187;
+            </button>
+          </div>
+
+          <div class="hero__rail">
+            <div class="hero__wave" aria-hidden="true"></div>
+            <div class="hero__thumbs" aria-label="Slides"></div>
+          </div>
+
+          <footer class="hero__foot">
+            <p class="hero__foot-left">
+               We create furniture for modern living,<br /> shaped by natural materials and timeless form,<br />made to be lived with for years.
+            </p>
+            <p class="hero__foot-mid">
+              studio@vyra.studio<br />Furniture with a point of view<br />Vyra Studio 2026&copy;
+            </p>
+            <ul class="hero__foot-right">
+              <li><a href="https://www.instagram.com/_sannskar__/">Instagram</a></li>
+              <li><a href="https://www.linkedin.com/in/sanskar-karki-860683246/?isSelfProfile=true">LinkedIn</a></li>
+            </ul>
+          </footer>
+        </main>
+
+        <!-- Section two lives here, pinned inside the stage. It is an overlay
+             on the hero, not a block that scrolls past it. -->
+        <div class="wave-panel" aria-hidden="true">
+          <p class="wave__chapter">MATERIAL &mdash; FORM</p>
+          <h2 class="wave__header">( Turning a clear idea into a complete luxury )</h2>
+
+          <div class="wave__wrapper">
+            <div class="wave__col wave__col--left"></div>
+            <div class="wave__col wave__col--right"></div>
+          </div>
+
+          <div class="wave__plate">
+            <div class="wave__plate-row">
+              <span class="wave__line wave__line--l"></span>
+              <!-- Two stacked images so the swap is a real crossfade. One
+                   image fading out and back in dips through black on every
+                   change; see swapPlate() in WavePanel.ts. -->
+              <div class="wave__thumb">
+                <img class="wave__thumb-img" src="/ring/01.jpg" alt="" />
+                <img class="wave__thumb-img" src="/ring/01.jpg" alt="" />
+              </div>
+              <span class="wave__line wave__line--r"></span>
+            </div>
+            <p class="wave__caption">( Brand strategy )</p>
+          </div>
+        </div>
+
+        <!-- Chapter B: the dot-matrix title marquee. -->
+        <div class="tm chapter" aria-hidden="true">
+          <p class="tm__sub">( Selected disciplines )</p>
+          <div class="tm__wrap">
+            <div class="tm__outer"><div class="tm__inner"></div></div>
+          </div>
+          <p class="tm__desc">Four disciplines, one clear point of view</p>
+        </div>
+
+        <!-- Chapter C: the cube. Six CSS faces, grown from scale(0). -->
+        <div class="cube chapter" aria-hidden="true">
+          <!-- The wrapper is the thing that scales. Transforming the panel
+               itself made every future child of this chapter inherit the
+               zoom, and multiplied the panel's own off-centre offset by it. -->
+          <div class="cube__wrapper">
+            <div class="cube__scene"><div class="cube__body"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scroll length for the three pinned chapters. Intentionally empty:
+           everything you see is pinned inside .stage above. Each chapter owns
+           one driver here, so changing one chapter's length leaves every other
+           chapter's numbers alone. -->
+      <div class="chapters">
+        <section id="ch-wave" class="chapter-scroll chapter-scroll--wave"></section>
+        <section id="ch-marquee" class="chapter-scroll chapter-scroll--marquee"></section>
+        <section id="ch-cube" class="chapter-scroll chapter-scroll--cube"></section>
+
+        <!-- Scrolls OVER all three pinned chapters. Caption stacks and the
+             giant dot-matrix letters, both in mix-blend-mode: difference. -->
+        <div class="stm" id="stm-layer"></div>
+      </div>
+    </div>
+
+    <!-- ══ Section three ════════════════════════════════════════════════ -->
+    <section id="ring-gallery" class="ring">
+      <div class="ring__sticky">
+        <div class="ring__canvas" aria-hidden="true"></div>
+
+        <div class="marquee ring__marquee" aria-hidden="true">
+          <div class="marquee__track">
+            <span>SELECTED EXPERIMENTS&nbsp;&nbsp;&bull;&nbsp;&nbsp;SELECTED EXPERIMENTS&nbsp;&nbsp;&bull;&nbsp;&nbsp;</span>
+          </div>
+        </div>
+
+        <div class="ring__center">
+          <h2 class="ring__title">THE ATELIER</h2>
+          <p class="ring__sub">SHAPING THE LANGUAGE OF<br />FURNITURE MADE FOR MODERN LIVING</p>
+          <ul class="ring__stats">
+            <li>04_CORE_MATERIALS</li>
+            <li>24_SIGNATURE_PIECES</li>
+            <li>2026</li>
+          </ul>
+        </div>
+
+        <div class="ring__fade ring__fade--l"></div>
+        <div class="ring__fade ring__fade--r"></div>
+      </div>
+    </section>
+
+    <footer class="site-foot" id="contact">
+      <p class="site-foot__mark">VYRA&deg;</p>
+      <p class="site-foot__line"><a href="mailto:hello@vyra.studio">hello@vyra.studio</a></p>
+      <p class="site-foot__line">Design with a point of view &mdash; Vyra Studio 2026&copy;</p>
+    </footer>
+
+    <canvas id="grain" aria-hidden="true"></canvas>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
