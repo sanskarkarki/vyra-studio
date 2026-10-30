@@ -47,6 +47,7 @@ export class WebGLManager {
   private targetMouse = new THREE.Vector2();
   private mouse = new THREE.Vector2();
   private paused = false;
+  private stagePaused = false;
   private raf = 0;
   private lastFrame = 0;
   private clock = new THREE.Clock();
@@ -67,7 +68,7 @@ export class WebGLManager {
       alpha: true,
       powerPreference: 'high-performance',
     });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
     this.renderer.setSize(container.clientWidth, container.clientHeight);
     container.appendChild(this.renderer.domElement);
 
@@ -101,7 +102,8 @@ export class WebGLManager {
     window.addEventListener('resize', this.onResize);
     document.addEventListener('visibilitychange', this.onVisibility);
 
-    this.tick(performance.now());
+    this.paused = document.hidden;
+    this.startLoop();
   }
 
   /** Preload a slide's texture; safe to call repeatedly (hover-preload). */
@@ -262,22 +264,41 @@ export class WebGLManager {
   }
 
   setPaused(paused: boolean): void {
-    this.paused = paused;
-    this.loaded.forEach((s, i) => {
-      if (!s?.video) return;
-      if (paused) s.video.pause();
-      else if (i === this.activeIndex) void s.video.play().catch(() => {});
+    this.stagePaused = paused;
+    this.updateLoopState();
+  }
+
+  private updateLoopState(): void {
+    const shouldPause = this.stagePaused || document.hidden;
+    if (this.paused === shouldPause) return;
+    this.paused = shouldPause;
+
+    this.loaded.forEach((slide, i) => {
+      if (!slide?.video) return;
+      if (shouldPause || i !== this.activeIndex) slide.video.pause();
+      else void slide.video.play().catch(() => {});
     });
+
+    if (shouldPause) {
+      cancelAnimationFrame(this.raf);
+      this.raf = 0;
+    } else {
+      this.lastFrame = performance.now();
+      this.startLoop();
+    }
+  }
+
+  private startLoop(): void {
+    if (this.paused || this.raf || document.hidden) return;
+    this.lastFrame = performance.now();
+    this.raf = requestAnimationFrame(this.tick);
   }
 
   private onPointerMove = (e: PointerEvent) => {
     this.targetMouse.set(e.clientX / window.innerWidth - 0.5, e.clientY / window.innerHeight - 0.5);
   };
 
-  private onVisibility = () => {
-    this.setPaused(document.hidden);
-    if (!document.hidden) this.lastFrame = performance.now();
-  };
+  private onVisibility = () => this.updateLoopState();
 
   private onResize = () => {
     if (this.resizeQueued) return;
@@ -288,15 +309,15 @@ export class WebGLManager {
       const h = this.container.clientHeight;
       /* DPR is re-read here, not just at construction: dragging the window
          to a second monitor changes it and nothing else fires. */
-      this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
       this.renderer.setSize(w, h);
       (this.material.uniforms.uResolution.value as THREE.Vector2).set(w, h);
     });
   };
 
   private tick = (now: number) => {
-    this.raf = requestAnimationFrame(this.tick);
-    if (this.paused) return;
+    this.raf = 0;
+    if (this.paused || document.hidden) return;
 
     const dt = this.lastFrame ? Math.min((now - this.lastFrame) / 1000, 0.1) : 1 / 60;
     this.lastFrame = now;
@@ -319,6 +340,7 @@ export class WebGLManager {
     }
 
     this.renderer.render(this.scene, this.camera);
+    this.raf = requestAnimationFrame(this.tick);
   };
 
   dispose(): void {

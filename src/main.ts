@@ -8,7 +8,7 @@ import { initNav } from './sections/Nav';
 import { initWavePanel, type WaveRow } from './sections/WavePanel';
 import { initTitleMarquee } from './sections/TitleMarquee';
 import { initCube } from './sections/Cube';
-import { initStage } from './sections/Chapters';
+import { initStage, P_REVEAL } from './sections/Chapters';
 import { initStatementLayer, initLetterDrift } from './sections/StatementLayer';
 import { RingGallery } from './sections/RingGallery';
 import { initMarquee } from './sections/Marquee';
@@ -169,6 +169,12 @@ const stageMask = document.querySelector<HTMLElement>('.stage__mask');
 const heroEl = document.querySelector<HTMLElement>('.hero');
 
 if (scrollTrack && stageMask && heroEl && wavePanel && tmPanel && cubePanel) {
+  /* Once the shutter has fully covered the hero, stop its WebGL render loop.
+     Resume as soon as the user scrolls back into the hero reveal. This keeps
+     the pinned transition choreography intact while freeing GPU time for the
+     incoming sections. */
+  panelClock.push((progress) => manager.setPaused(progress >= P_REVEAL));
+
   initStage({
     track: scrollTrack,
     mask: stageMask,

@@ -109,12 +109,17 @@ export class RingGallery {
   private ringGroups: THREE.Group[] = [];
   private videos: HTMLVideoElement[] = [];
   private videoTextures: THREE.VideoTexture[] = [];
+  /** One material/texture per unique source, shared by all repeated cards. */
   private materials: THREE.MeshBasicMaterial[] = [];
+  private materialBySource = new Map<string, THREE.MeshBasicMaterial>();
+  private textureLoadStarted = false;
+  private disposed = false;
   private host: HTMLElement;
   private clearance: HTMLElement[];
   private raf = 0;
-  private clock = new THREE.Clock();
+  private lastFrame = 0;
   private visible = false;
+  private sectionActive = false;
   private resizeQueued = false;
 
   /** Written by ScrollTrigger, read by the render loop. */
@@ -130,7 +135,7 @@ export class RingGallery {
       alpha: true,
       powerPreference: 'high-performance',
     });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
     this.renderer.setSize(this.host.clientWidth, this.host.clientHeight);
     this.host.appendChild(this.renderer.domElement);
 
@@ -154,12 +159,9 @@ export class RingGallery {
 
     window.addEventListener('resize', this.onResize);
     document.addEventListener('visibilitychange', this.onVisibility);
-    this.tick();
   }
 
   private build(sources: string[]): void {
-    const loader = new THREE.TextureLoader();
-    const maxAniso = this.renderer.capabilities.getMaxAnisotropy();
     let cursor = 0;
 
     for (const ring of RINGS) {
@@ -170,20 +172,20 @@ export class RingGallery {
         const src = sources[cursor % sources.length];
         cursor++;
 
-        const material = new THREE.MeshBasicMaterial({
-          transparent: true,
-          opacity: 1,
-          side: THREE.FrontSide,
-          depthWrite: false,
-        });
-        material.map = this.makeTexture(src, loader, maxAniso);
-        this.materials.push(material);
+        let material = this.materialBySource.get(src);
+        if (!material) {
+          material = new THREE.MeshBasicMaterial({
+            transparent: true,
+            opacity: 1,
+            side: THREE.FrontSide,
+            depthWrite: false,
+          });
+          this.materialBySource.set(src, material);
+          this.materials.push(material);
+        }
 
         const mesh = new THREE.Mesh(geometry, material);
         mesh.position.x = ring.radius;
-        /* -90 degrees puts the card's long edge along the ring's tangent, so
-           the portrait cards stand upright as the ring turns instead of lying
-           on their sides. */
         mesh.rotation.z = -Math.PI / 2;
 
         const slot = new THREE.Group();
@@ -196,34 +198,61 @@ export class RingGallery {
       this.root.add(ringGroup);
     }
 
-    /* Starts collapsed at the centre. The entrance is a scale, not a camera
-       dolly, so it cannot ever clip through the near plane. */
     this.root.scale.setScalar(0.12);
   }
 
-  private makeTexture(
-    src: string,
-    loader: THREE.TextureLoader,
-    maxAniso: number,
-  ): THREE.Texture {
-    if (/\.(mp4|webm)$/i.test(src)) {
-      const video = document.createElement('video');
-      video.src = src;
-      video.muted = true;
-      video.loop = true;
-      video.playsInline = true;
-      video.preload = 'auto';
-      void video.play().catch(() => {});
-      const tex = new THREE.VideoTexture(video);
-      tex.colorSpace = THREE.SRGBColorSpace;
-      this.videos.push(video);
-      this.videoTextures.push(tex);
-      return tex;
-    }
-    const tex = loader.load(src);
-    tex.colorSpace = THREE.SRGBColorSpace;
-    tex.anisotropy = maxAniso;
-    return tex;
+  /** Load a few unique gallery images at a time, shortly before the section
+   * enters view. The previous implementation requested the same 24 images
+   * once for every card (72 texture objects) during initial page startup. */
+  private async loadTextures(): Promise<void> {
+    if (this.textureLoadStarted || this.disposed) return;
+    this.textureLoadStarted = true;
+
+    const entries = [...this.materialBySource.entries()];
+    const loader = new THREE.TextureLoader();
+    const maxAniso = Math.min(this.renderer.capabilities.getMaxAnisotropy(), 4);
+    let cursor = 0;
+
+    const worker = async (): Promise<void> => {
+      while (cursor < entries.length && !this.disposed) {
+        const [src, material] = entries[cursor++];
+        try {
+          if (/\.(mp4|webm)$/i.test(src)) {
+            const video = document.createElement('video');
+            video.src = src;
+            video.muted = true;
+            video.loop = true;
+            video.playsInline = true;
+            video.preload = 'metadata';
+            const texture = new THREE.VideoTexture(video);
+            texture.colorSpace = THREE.SRGBColorSpace;
+            texture.minFilter = THREE.LinearFilter;
+            texture.magFilter = THREE.LinearFilter;
+            this.videos.push(video);
+            this.videoTextures.push(texture);
+            material.map = texture;
+          } else {
+            const texture = await loader.loadAsync(src);
+            if (this.disposed) {
+              texture.dispose();
+              return;
+            }
+            texture.colorSpace = THREE.SRGBColorSpace;
+            texture.anisotropy = maxAniso;
+            texture.minFilter = THREE.LinearMipmapLinearFilter;
+            texture.magFilter = THREE.LinearFilter;
+            texture.generateMipmaps = true;
+            material.map = texture;
+          }
+          material.needsUpdate = true;
+        } catch (error) {
+          console.warn(`[Vyra] Gallery image failed to load: ${src}`, error);
+        }
+      }
+    };
+
+    await Promise.all(Array.from({ length: Math.min(3, entries.length) }, () => worker()));
+    if (this.visible && !document.hidden) this.renderOnce();
   }
 
   private bindScroll(section: HTMLElement): void {
@@ -231,13 +260,22 @@ export class RingGallery {
        the whole section would tie the grow-in and the fade-out to the same
        curve, and the section would spend most of its length doing nothing
        interesting in the middle. */
+    /* Start fetching the 24 unique images before the gallery reaches the
+       viewport. Three concurrent requests avoid a burst of decode/upload work
+       during the section transition itself. */
+    ScrollTrigger.create({
+      trigger: section,
+      start: 'top 150%',
+      once: true,
+      onEnter: () => void this.loadTextures(),
+      onEnterBack: () => void this.loadTextures(),
+    });
+
     ScrollTrigger.create({
       trigger: section,
       start: 'top bottom',
       end: 'bottom top',
-      onToggle: (self) => {
-        this.visible = self.isActive;
-      },
+      onToggle: (self) => this.setVisible(self.isActive),
     });
 
     gsap.fromTo(
@@ -359,48 +397,83 @@ export class RingGallery {
     this.resizeQueued = true;
     requestAnimationFrame(() => {
       this.resizeQueued = false;
-      this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
       this.renderer.setSize(this.host.clientWidth, this.host.clientHeight);
       this.applyFraming();
     });
   };
 
+  private setVisible(visible: boolean): void {
+    this.sectionActive = visible;
+    this.visible = visible && !document.hidden;
+    if (this.visible) {
+      for (const video of this.videos) void video.play().catch(() => {});
+      this.lastFrame = performance.now();
+      this.startLoop();
+      if (!this.textureLoadStarted) void this.loadTextures();
+    } else {
+      cancelAnimationFrame(this.raf);
+      this.raf = 0;
+      for (const video of this.videos) video.pause();
+    }
+  }
+
   private onVisibility = () => {
-    for (const v of this.videos) {
-      if (document.hidden) v.pause();
-      else void v.play().catch(() => {});
+    this.visible = this.sectionActive && !document.hidden;
+    if (this.visible) {
+      for (const video of this.videos) void video.play().catch(() => {});
+      this.startLoop();
+    } else {
+      cancelAnimationFrame(this.raf);
+      this.raf = 0;
+      for (const video of this.videos) video.pause();
     }
   };
 
-  private tick = () => {
+  private startLoop(): void {
+    if (!this.visible || this.raf || document.hidden) return;
+    this.lastFrame = performance.now();
     this.raf = requestAnimationFrame(this.tick);
-    /* Off-screen, the loop still runs but skips the draw. Cheaper than
-       tearing the context down and rebuilding it on re-entry, and it keeps
-       the idle rotation continuous so the section is never re-entered with a
-       stale pose. */
-    const dt = this.clock.getDelta();
+  }
+
+  private renderOnce(): void {
+    const turns = this.scrollTurns + this.idleTurns;
+    for (let i = 0; i < this.ringGroups.length; i++) {
+      this.ringGroups[i].rotation.z = turns * TAU * RINGS[i].direction;
+    }
+    this.renderer.render(this.scene, this.camera);
+  }
+
+  private tick = (now: number) => {
+    this.raf = 0;
+    if (!this.visible || document.hidden) return;
+
+    const dt = Math.min((now - this.lastFrame) / 1000, 0.05);
+    this.lastFrame = now;
     this.idleTurns += dt * IDLE_SPEED;
-    if (!this.visible) return;
 
     const turns = this.scrollTurns + this.idleTurns;
     for (let i = 0; i < this.ringGroups.length; i++) {
       this.ringGroups[i].rotation.z = turns * TAU * RINGS[i].direction;
     }
 
-    for (const t of this.videoTextures) t.needsUpdate = true;
-
+    for (const texture of this.videoTextures) texture.needsUpdate = true;
     this.renderer.render(this.scene, this.camera);
+    this.raf = requestAnimationFrame(this.tick);
   };
 
   dispose(): void {
+    this.disposed = true;
     cancelAnimationFrame(this.raf);
     window.removeEventListener('resize', this.onResize);
     document.removeEventListener('visibilitychange', this.onVisibility);
     for (const v of this.videos) v.remove();
-    this.scene.traverse((o) => {
-      const mesh = o as THREE.Mesh;
-      if (mesh.geometry) mesh.geometry.dispose();
+    const geometries = new Set<THREE.BufferGeometry>();
+    this.scene.traverse((object) => {
+      const mesh = object as THREE.Mesh;
+      if (mesh.geometry) geometries.add(mesh.geometry);
     });
+    geometries.forEach((geometry) => geometry.dispose());
     for (const m of this.materials) {
       m.map?.dispose();
       m.dispose();

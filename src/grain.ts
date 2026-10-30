@@ -1,14 +1,13 @@
 /**
- * Film grain as a fixed Canvas-2D overlay: ten pre-baked noise frames
- * cycled at a low frame rate. Pre-baking matters because generating noise
- * per frame is a full-screen CPU write every 16ms; flipping between ten
- * cached bitmaps is nearly free. Skipped entirely for reduced motion and
- * on small screens, where grain costs more than it adds.
+ * Lightweight film grain overlay.
+ * Noise frames are generated once, then painted at 12fps using a timeout
+ * rather than keeping a 60fps requestAnimationFrame loop alive all page long.
  */
 
-const FRAME_COUNT = 10;
-const TILE = 256;
+const FRAME_COUNT = 8;
+const TILE = 192;
 const FPS = 12;
+const FRAME_DELAY = 1000 / FPS;
 
 export function startGrain(canvas: HTMLCanvasElement): () => void {
   if (
@@ -19,7 +18,7 @@ export function startGrain(canvas: HTMLCanvasElement): () => void {
     return () => {};
   }
 
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext('2d', { alpha: true });
   if (!ctx) return () => {};
 
   const frames: HTMLCanvasElement[] = [];
@@ -29,44 +28,61 @@ export function startGrain(canvas: HTMLCanvasElement): () => void {
     tile.height = TILE;
     const tctx = tile.getContext('2d');
     if (!tctx) continue;
+
     const data = tctx.createImageData(TILE, TILE);
     for (let i = 0; i < data.data.length; i += 4) {
-      const v = Math.floor(Math.random() * 256);
-      data.data[i] = v;
-      data.data[i + 1] = v;
-      data.data[i + 2] = v;
+      const value = Math.floor(Math.random() * 256);
+      data.data[i] = value;
+      data.data[i + 1] = value;
+      data.data[i + 2] = value;
       data.data[i + 3] = 255;
     }
     tctx.putImageData(data, 0, 0);
     frames.push(tile);
   }
 
+  if (!frames.length) return () => {};
+
   const resize = () => {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    canvas.width = Math.round(window.innerWidth * dpr);
+    canvas.height = Math.round(window.innerHeight * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   };
   resize();
-  window.addEventListener('resize', resize);
+  window.addEventListener('resize', resize, { passive: true });
 
   let frame = 0;
-  let last = 0;
-  let raf = 0;
-  const loop = (t: number) => {
-    raf = requestAnimationFrame(loop);
-    if (t - last < 1000 / FPS) return;
-    last = t;
+  let timer = 0;
+  let stopped = document.hidden;
+  const patterns = frames.map((tile) => ctx.createPattern(tile, 'repeat'));
+
+  const paint = () => {
+    if (stopped) return;
     frame = (frame + 1) % frames.length;
-    const tile = frames[frame];
-    const pattern = ctx.createPattern(tile, 'repeat');
-    if (!pattern) return;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = pattern;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    const pattern = patterns[frame];
+    if (pattern) {
+      ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+      ctx.fillStyle = pattern;
+      ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
+    }
+    timer = window.setTimeout(paint, FRAME_DELAY);
   };
-  raf = requestAnimationFrame(loop);
+
+  const onVisibility = () => {
+    stopped = document.hidden;
+    window.clearTimeout(timer);
+    if (!stopped) timer = window.setTimeout(paint, FRAME_DELAY);
+  };
+
+  document.addEventListener('visibilitychange', onVisibility);
+  if (!stopped) timer = window.setTimeout(paint, FRAME_DELAY);
 
   return () => {
-    cancelAnimationFrame(raf);
+    stopped = true;
+    window.clearTimeout(timer);
     window.removeEventListener('resize', resize);
+    document.removeEventListener('visibilitychange', onVisibility);
+    frames.length = 0;
   };
 }
