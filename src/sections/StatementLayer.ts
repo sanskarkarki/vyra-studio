@@ -1,4 +1,4 @@
-import gsap from 'gsap';
+﻿import gsap from 'gsap';
 import { ScrollTrigger } from '../scroll';
 
 /**
@@ -7,10 +7,10 @@ import { ScrollTrigger } from '../scroll';
  * Two kinds of thing live here, and they are the two you said were static in
  * your build:
  *
- *   1. **Caption stacks** — the four-line blocks (ART DIRECTION / CAMPAIGN
+ *   1. **Caption stacks** â€” the four-line blocks (ART DIRECTION / CAMPAIGN
  *      DESIGN / VISUAL NARRATIVE / BRAND EXPERIENCE). 13px, uppercase, dropped
  *      at one of four fixed x-stations.
- *   2. **Giant letters** — the oversized dot-matrix characters. In the
+ *   2. **Giant letters** â€” the oversized dot-matrix characters. In the
  *      reference these are not a canvas, a sprite sheet or a grid of divs:
  *      they are plain text at `font-size: 20vw` in **Bitcount Grid Single**, a
  *      Google font whose glyphs are literally made of dots. One character per
@@ -26,24 +26,24 @@ import { ScrollTrigger } from '../scroll';
  * underneath it goes dark and cuts a hole in itself. Nothing else gives you
  * that, and it costs one line.
  *
- * ── The entrance ────────────────────────────────────────────────────────────
+ * â”€â”€ The entrance â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
  *
  * Every element enters **from the left**, and the four lines of a stack are
- * staggered rather than arriving together — that is the zigzag you described.
+ * staggered rather than arriving together â€” that is the zigzag you described.
  * Three details do the work:
  *
  *   - `x` starts negative and proportional to the line's index, so line 4
  *     starts further out than line 1 and they arrive on a diagonal instead of
  *     as a block.
  *   - `filter: blur()` rides in with the movement. The reference declares
- *     `filter: blur(0px)` on the resting state for exactly this reason —
+ *     `filter: blur(0px)` on the resting state for exactly this reason â€”
  *     it is there to be animated from.
  *   - `once: true`. These are one-shot reveals, not scrubs. Scrubbing them
  *     means they reverse as you scroll back and the section never settles.
  */
 
 export interface CaptionStack {
-  /** 1–4. Which x-station this stack sits at. */
+  /** 1â€“4. Which x-station this stack sits at. */
   pos: 1 | 2 | 3 | 4;
   lines: string[];
 }
@@ -183,7 +183,7 @@ export function initLetterDrift(host: HTMLElement): void {
           trigger: el,
           start: 'top bottom',
           end: 'bottom top',
-          scrub: 1.2,
+          scrub: true,
         },
       },
     );

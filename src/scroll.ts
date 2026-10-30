@@ -1,4 +1,4 @@
-import gsap from 'gsap';
+﻿import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Lenis from 'lenis';
 
@@ -21,7 +21,7 @@ export function initScroll(): Lenis {
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   const lenis = new Lenis({
-    duration: reduced ? 0 : 1.05,
+    duration: reduced ? 0 : 0.45,
     easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
     smoothWheel: !reduced,
     /* Touch is left native. Smoothing it fights the OS rubber-band and is

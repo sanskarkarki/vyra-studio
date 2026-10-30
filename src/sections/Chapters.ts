@@ -1,31 +1,31 @@
-import { ScrollTrigger } from '../scroll';
+﻿import { ScrollTrigger } from '../scroll';
 
 /**
  * Section two is one pinned stage running one clock.
  *
  * It used to be three chapters cross-fading against three separate scroll
  * drivers, and that is what produced the ghosting: chapter N faded out across
- * `bottom 75% → bottom 15%` of its own driver while chapter N+1 faded in
- * across `top 75% → top 15%` of its own. Because the drivers are stacked
- * siblings, driver N's bottom edge *is* driver N+1's top edge — so those two
+ * `bottom 75% â†’ bottom 15%` of its own driver while chapter N+1 faded in
+ * across `top 75% â†’ top 15%` of its own. Because the drivers are stacked
+ * siblings, driver N's bottom edge *is* driver N+1's top edge â€” so those two
  * windows are not merely overlapping, they are the identical stretch of
  * scroll. Two panels at partial opacity, every time, by construction.
  *
  * The fix is not to nudge the windows apart. It is to stop having two owners
- * for "what is on screen". One progress value, `p`, runs 0 → 1 across the
+ * for "what is on screen". One progress value, `p`, runs 0 â†’ 1 across the
  * whole pinned stage, and every element is hand-placed against fixed
  * breakpoints in that one number:
  *
- *     0.00 ─ 0.12   black shutter climbs over the hero
- *     0.12 ─ 0.44   the wave panel holds
+ *     0.00 â”€ 0.12   black shutter climbs over the hero
+ *     0.12 â”€ 0.44   the wave panel holds
  *     0.44          the wave panel is GONE. Not fading. Gone.
- *     0.44 ─ 0.60   marquee reveals; the cube tumbles in behind it
- *     0.60 ─ 0.78   the cube takes one more turn
- *     0.78 ─ 1.00   marquee exits upward; the cube zooms to one face
+ *     0.44 â”€ 0.60   marquee reveals; the cube tumbles in behind it
+ *     0.60 â”€ 0.78   the cube takes one more turn
+ *     0.78 â”€ 1.00   marquee exits upward; the cube zooms to one face
  *
  * A hand-off where the outgoing element's window *ends* exactly where the
  * incoming one's *begins* cannot produce an overlap frame, and no amount of
- * retuning is needed when a driver's height changes — the breakpoints are
+ * retuning is needed when a driver's height changes â€” the breakpoints are
  * fractions of the whole, so they move together.
  *
  * The drivers still exist and still supply the scroll length; they are just
@@ -87,7 +87,7 @@ export function initStage(options: StageOptions): void {
     if (p === last) return;
     last = p;
 
-    /* ── Shutter ──────────────────────────────────────────────────────── */
+    /* â”€â”€ Shutter â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     const shutter = (1 - easeInOutCubic(span(p, 0, P_REVEAL))) * 100;
     mask.style.clipPath = `inset(${shutter}% 0 0 0)`;
 
@@ -97,10 +97,10 @@ export function initStage(options: StageOptions): void {
     hero.style.opacity = String(1 - heroOut);
     hero.style.transform = `translate3d(0, ${-40 * heroOut}px, 0)`;
 
-    /* ── Wave panel ───────────────────────────────────────────────────── */
+    /* â”€â”€ Wave panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     const panelT = span(p, P_REVEAL, P_TEXT_OUT);
     /* Arrives with the shutter, leaves in the last 17% of its own phase. The
-       whole panel moves — columns, plate, captions, caption image — as one
+       whole panel moves â€” columns, plate, captions, caption image â€” as one
        object. Animating the parts separately is what leaves the photograph
        hanging in the middle of the screen after the words have gone. */
     const panelIn = easeInOutCubic(span(p, 0, P_REVEAL));
@@ -111,7 +111,7 @@ export function initStage(options: StageOptions): void {
        and the row scrub underneath has nothing to composite against. */
     wavePanel.style.visibility = panelOut >= 1 ? 'hidden' : 'visible';
 
-    /* ── Marquee and cube ─────────────────────────────────────────────── */
+    /* â”€â”€ Marquee and cube â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     /* A hard switch, not a fade. Both panels are black-on-black; what the eye
        reads as their entrance is the masked line reveal and the cube growing
        from zero, both of which start at this same instant. */
@@ -137,7 +137,7 @@ export function initStage(options: StageOptions): void {
        the reference's own lerp-toward-target is the same idea expressed
        manually. Adding a second here would round off the phase boundaries
        and let two neighbouring phases briefly co-exist again. */
-    scrub: 0.6,
+    scrub: true,
     onUpdate: (self) => paint(self.progress),
     onRefresh: (self) => paint(self.progress),
   });

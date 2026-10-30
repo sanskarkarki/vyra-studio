@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+﻿import * as THREE from 'three';
 import gsap from 'gsap';
 import { ScrollTrigger } from '../scroll';
 
@@ -6,7 +6,7 @@ import { ScrollTrigger } from '../scroll';
  * Section three: the gallery that reads as a cube/globe of work.
  *
  * It is not a cube and it is not a sphere. It is **three concentric rings of
- * flat planes, all spinning about the Z axis** — the axis pointing at the
+ * flat planes, all spinning about the Z axis** â€” the axis pointing at the
  * camera. That single fact is why it looks expensive and why it is cheap:
  *
  *   - Because the rotation axis faces the viewer, the rings sweep across the
@@ -20,9 +20,9 @@ import { ScrollTrigger } from '../scroll';
  *
  * Structure, per ring:
  *
- *   ringGroup            rotation.z animated  ← this is the only thing moving
- *     └ slotGroup ×N     rotation.z = i/N * TAU, fixed
- *         └ mesh         position.x = radius, rotation.z = -PI/2, fixed
+ *   ringGroup            rotation.z animated  â† this is the only thing moving
+ *     â”” slotGroup Ã—N     rotation.z = i/N * TAU, fixed
+ *         â”” mesh         position.x = radius, rotation.z = -PI/2, fixed
  *
  * Nesting a fixed slot rotation inside an animated ring rotation is what lets
  * you spin the whole ring by writing one number per frame. Trying to place
@@ -54,7 +54,7 @@ const CARD_H = 1.6;
 /**
  * How the camera is framed.
  *
- * This used to be a fixed world-space height — 46 units — and that is what
+ * This used to be a fixed world-space height â€” 46 units â€” and that is what
  * put the innermost ring straight through the middle of the heading. The
  * bug is not the number, it is the axis. `.ring__title` is sized in `vw`, so
  * it grows and shrinks with the viewport's WIDTH, while a fixed world height
@@ -65,8 +65,8 @@ const CARD_H = 1.6;
  * So the framing is measured instead of declared. Every resize, the furthest
  * corner of the centre text is measured from the ring's centre, and the
  * camera is pushed back until the inner edge of the innermost ring sits that
- * far out plus a margin. Whatever the heading does — a `vw` change, a font
- * swap, a longer word — the ring opens up to accommodate it, and the
+ * far out plus a margin. Whatever the heading does â€” a `vw` change, a font
+ * swap, a longer word â€” the ring opens up to accommodate it, and the
  * stylesheet stays the only place the type is described.
  */
 
@@ -74,7 +74,7 @@ const CARD_H = 1.6;
     inner edge, as a fraction of that corner distance. */
 const CENTRE_CLEARANCE = 0.18;
 
-/** Used only if the centre text cannot be measured — zero-size, display:none,
+/** Used only if the centre text cannot be measured â€” zero-size, display:none,
     or not passed in at all. World units across the host's width. */
 const FALLBACK_VISIBLE_WIDTH = 26;
 
@@ -93,7 +93,7 @@ export interface RingGalleryOptions {
   section: HTMLElement;
   canvasHost: HTMLElement;
   /**
-   * Elements the ring must stay clear of — the centre heading and its
+   * Elements the ring must stay clear of â€” the centre heading and its
    * sub-line. Deliberately NOT every child of the centre block: the stats row
    * spans almost the full width, so including it would push the ring off
    * screen entirely to satisfy something the cards are meant to pass behind.
@@ -294,14 +294,14 @@ export class RingGallery {
              screen is an assembly that already stopped moving. Carrying it
              70vh past the pin means it is still opening as it arrives. */
           end: '+=170%',
-          scrub: 0.8,
+          scrub: true,
         },
       },
     );
 
     /* Rotation is written to a plain number and applied in the render loop,
        rather than tweening `rotation.z` directly. That keeps the constant
-       idle drift and the scrubbed turn additive — tween the property itself
+       idle drift and the scrubbed turn additive â€” tween the property itself
        and the idle spin gets stomped on every scroll frame. */
     gsap.fromTo(
       this,
@@ -313,7 +313,7 @@ export class RingGallery {
           trigger: section,
           start: 'top bottom',
           end: 'bottom top',
-          scrub: 1,
+          scrub: true,
         },
       },
     );
@@ -322,7 +322,7 @@ export class RingGallery {
        to fight it for attention.
 
        Note the start/end are measured off `bottom`, which means this section
-       needs something after it — a footer or section four. If the ring is the
+       needs something after it â€” a footer or section four. If the ring is the
        last element on the page its bottom never rises past the viewport and
        this trigger silently never fires, which is an easy hour to lose. */
     const fade = { value: 1 };
